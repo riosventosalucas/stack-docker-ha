@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  reverse-proxy:
+    image: traefik:v2.11
+    command:
+      - --api.insecure=true
+      - --providers.docker
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - traefik-public
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+
+  nginx:
+    image: nginx:latest
+    deploy:
+      replicas: 3
+      restart_policy:
+        condition: on-failure
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./app:/var/www/html
+    labels:
+      - "traefik.http.routers.nginx.rule=Host(`app.localhost`)"
+      - "traefik.http.services.nginx.loadbalancer.server.port=80"
+    networks:
+      - traefik-public
+
+  php:
+    image: app
+    deploy:
+      replicas: 5
+      restart_policy:
+        condition: on-failure
+    volumes:
+      - ./app:/var/www/html
+    networks:
+      - traefik-public
+
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: superapp_db
+      MYSQL_USER: superapp_user
+      MYSQL_PASSWORD: superpassword
+    volumes:
+      - mysql_data:/var/lib/mysql
+    deploy:
+      restart_policy:
+        condition: on-failure
+    networks:
+      - traefik-public
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  traefik-public:
+    external: true

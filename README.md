@@ -4,8 +4,8 @@
 
 1. Clonar el repositorio:
    ```sh
-   git clone <repositorio>
-   cd <nombre-del-repositorio>
+   git clone git@github.com:riosventosalucas/stack-docker-ha.git
+   cd stack-docker-ha
    ```
 
 2. Inicializar Docker Swarm:
